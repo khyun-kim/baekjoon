@@ -1,4 +1,3 @@
-
 class Heap {
     constructor(_cond = (a, b) => a < b) {this.data = [];this.cond = _cond}
     push(val) {
@@ -40,22 +39,21 @@ class Heap {
         [this.data[p], this.data[c]] = [this.data[c], this.data[p]];
     }
     peek() { return this.data[0] }
-    clear() {this.data.length = 0}
 }
 
-const deletedIds = new Uint8Array(1000001).fill(0);
 class DuelHeap {
     constructor() {
-        this.maxHeap = new Heap((a, b) => a[1] > b[1]);
-        this.minHeap = new Heap((a, b) => a[1] < b[1]);
-        this.indexer = 0;
+        this.maxHeap = new Heap((a, b) => a.priority > b.priority);
+        this.minHeap = new Heap((a, b) => a.priority < b.priority);
+        this.indexer = 1;
+        this.deletedIds = new Set();
         this.length = 0;
     }
     size() {
         return this.length;
     }
     push(val) {
-        const item = [this.indexer++, val];
+        const item = {id:this.indexer++, value:val, priority:val};
         this.maxHeap.push(item);
         this.minHeap.push(item);
         this.length++;
@@ -63,72 +61,56 @@ class DuelHeap {
     pop(max = false) {
         const item = this._cleanHeap(max ? this.maxHeap : this.minHeap);
         if(!item) return null;
-        deletedIds[item[0]] = 1;
+        this.deletedIds.add(item.id);
         this.length--;
-        return item[1];
+        return item.value;
     }
 
     _cleanHeap(heap) {
-        while(heap.size() > 0 && deletedIds[heap.peek()[0]]) {
+        while(heap.size() > 0 && this.deletedIds.has(heap.peek().id)) {
             heap.pop();
         }
         return heap.size() > 0 ? heap.pop() : null;
     }
     peek(max = true) {
         const heap = max ? this.maxHeap : this.minHeap;
-        while(heap.size() > 0 && deletedIds[heap.peek()[0]]) {
+        while(heap.size() > 0 && this.deletedIds.has(heap.peek().id)) {
             heap.pop();
         }
-        return heap.peek()[1];
-    }
-    clear() {
-        this.maxHeap.clear();
-        this.minHeap.clear();
-        this.indexer = 0;
-        this.length = 0;
-        deletedIds.fill(0);
+        return heap.peek().value;
     }
 }
 
 
 function solution(input) {
+    const result = [];
     const scanner = input.matchAll(/\S+/g);
+    
     function next() {
         return scanner.next().value[0]
     }
-
-    let cursor = 0;
-    const result = [];
     const T = Number(next());
-    const heap = new DuelHeap();
+
     for(let t = 0; t < T; t++) {
+        const heap = new DuelHeap();
         const K = Number(next());
-        for(let i = 0; i < K; i++) {
+        for(let k = 0; k < K; k++) {
             const command = next();
             const num = Number(next());
-            
             if(command === "I") {
-                heap.push(num);
+                heap.push(Number(num));
             } else {
-                if(heap.size() > 0) heap.pop(num === 1);
+                if(heap.size() > 0) heap.pop(num === 1)
             }
         }
-
-        if(heap.size() === 0) {
-            result.push("EMPTY")
-        } else {
-            result.push(`${heap.peek(true)} ${heap.peek(false)}`);
-        }
-
-        heap.clear();
+        if(heap.size() === 0) result.push('EMPTY');
+        else result.push(`${heap.peek(true)} ${heap.peek(false)}`);
     }
     return result;
 }
 
-
+// const inputStr = "2\n7\nI 16\nI -5643\nD -1\nD 1\nD 1\nI 123\nD -1\n9\nI -45\nI 653\nD 1\nI -642\nI 45\nI 97\nD 1\nD -1\nI 333"
+// process.stdout.write(solution(inputStr).join("\n"));
 const fs = require('fs');
 const inputs = fs.readFileSync(0).toString().trim();
 process.stdout.write(solution(inputs).join("\n"));
-
-// const inputStr = "3\n7\nI 16\nI -5643\nD -1\nD 1\nD 1\nI 123\nD -1\n9\nI -45\nI 653\nD 1\nI -642\nI 45\nI 97\nD 1\nD -1\nI 333\n9\nI -45\nI 653\nD 1\nI -642\nI 45\nI 97\nD 1\nD -1\nI 333"
-// process.stdout.write(solution(inputStr).join("\n"));
